@@ -3,17 +3,17 @@ ARG UPSTREAM_TAG_SHA
 
 # https://github.com/rakshasa/rtorrent/issues/1479#issuecomment-2888925659
 FROM ${UPSTREAM_IMAGE}:${UPSTREAM_TAG_SHA} AS builder
-RUN apk add --no-cache build-base linux-headers curl-dev ncurses-dev tinyxml2-dev
+RUN apk add --no-cache build-base linux-headers curl-dev ncurses-dev tinyxml2-dev git autoconf automake libtool cppunit-dev
 ARG VERSION
-RUN mkdir "/tmp/libtorrent" && \
-    curl -fsSL "https://github.com/rakshasa/rtorrent/releases/download/v${VERSION}/libtorrent-${VERSION}.tar.gz" | tar xzf - -C "/tmp/libtorrent" --strip-components=1 && \
+RUN git clone https://github.com/rakshasa/libtorrent.git /tmp/libtorrent && \
     cd "/tmp/libtorrent" && \
+    autoreconf -fi && \
     ./configure --disable-debug --disable-shared --enable-static --enable-aligned && \
     make -j$(nproc) CXXFLAGS="-w -O3 -flto -Werror=odr -Werror=lto-type-mismatch -Werror=strict-aliasing" && \
     make install
-RUN mkdir "/tmp/rtorrent" && \
-    curl -fsSL "https://github.com/rakshasa/rtorrent/releases/download/v${VERSION}/rtorrent-${VERSION}.tar.gz" | tar xzf - -C "/tmp/rtorrent" --strip-components=1 && \
+RUN git clone https://github.com/PiloUnk/rtorrent.git /tmp/rtorrent && \
     cd "/tmp/rtorrent" && \
+    autoreconf -fi && \
     ./configure --disable-debug --disable-shared --enable-static --enable-aligned --with-xmlrpc-tinyxml2 && \
     make -j$(nproc) CXXFLAGS="-w -O3 -flto -Werror=odr -Werror=lto-type-mismatch -Werror=strict-aliasing" && \
     make install
